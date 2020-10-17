@@ -7,7 +7,7 @@ public class ConfiguracaoGeral {
 	private String nomeArquivo;
 
 	public ConfiguracaoGeral() {
-		this.volume = 50; // valor padr√£o 
+		this.volume = 50; // valor padr„o
 	}
 
 	public String getInstrumento() {

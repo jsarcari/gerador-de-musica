@@ -4,12 +4,11 @@ import java.awt.Color; //Para botar cor nas bordas
 import java.awt.event.ActionEvent; //Para a parte de eventos
 import java.awt.event.ActionListener; //Para a parte de eventos
 import java.io.File; //Para ler o arquivo
-import java.text.NumberFormat;
 import java.util.Scanner; //Para ler o arquivo
+
+import javax.sound.midi.Sequence; //Para utilizar o Sequence
 import javax.swing.*; //Para implementar a interface
 import javax.swing.border.Border; //Para conseguir implementar as bordas
-
-import com.sun.org.apache.xpath.internal.operations.Number;
 
 public class Tela {
 
@@ -143,9 +142,8 @@ public class Tela {
 		inputBpm.setText("120"); // Valor padrão
 
 		// Cria o combo de instrumentos
-		String instrumentos[] = { "Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano",
-				"Honky-tonk Piano", "Electric Piano 1", "Harpsichord", "Clavi", "Celesta", "Vibraphone", "Marimba",
-				"Xylophone", "Tubular Bells" };
+		String instrumentos[] = { "Acoustic Grand Piano", "Harpsichord", "Electric Grand Piano", "Xylophone",
+				"Church Organ", "Acoustic Guitar (nylon)", "Acoustic Bass", "Violin", "Trumpet", "Ocarina" };
 		comboInstrumento = new JComboBox<String>(instrumentos);
 		comboInstrumento.setBounds(POSICAO_TELA_COMBO_INSTRUMENTO_X, POSICAO_TELA_COMBO_INSTRUMENTO_Y,
 				COMBO_INSTRUMENTO_LARGURA, COMBO_INSTRUMENTO_ALTURA);
@@ -245,6 +243,7 @@ public class Tela {
 				String conteudoTextoMusica = inputTextoMusica.getText();
 				String conteudoNomeArquivo = inputNomeArquivo.getText();
 				String conteudoBpm = inputBpm.getText();
+				String conteudoComboInstrumento = comboInstrumento.getSelectedItem().toString();
 
 				if (conteudoTextoMusica.isEmpty()) {
 					JOptionPane.showOptionDialog(null, "Texto para conversão não informado!", "ERRO",
@@ -258,25 +257,24 @@ public class Tela {
 							JOptionPane.showOptionDialog(null, "BPM não informado!", "ERRO", JOptionPane.DEFAULT_OPTION,
 									JOptionPane.ERROR_MESSAGE, null, null, null);
 						} else {
-							if (!conteudoBpm.isEmpty()) {
-								try {
-									int conversaoConteudoBpm = Integer.parseInt(conteudoBpm);
-								} catch (NumberFormatException ex) {
-									JOptionPane.showOptionDialog(null, "BPM aceita apenas números!", "ERRO",
-											JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
-								}
-							} else {
+							try {
+								int conversaoConteudoBpm = Integer.parseInt(conteudoBpm);
 								ConfiguracaoGeral configuracaoGeral = new ConfiguracaoGeral();
 								configuracaoGeral.setNomeArquivo(conteudoNomeArquivo);
 								configuracaoGeral.setBpm(Integer.parseInt(conteudoBpm));
-								configuracaoGeral.setVolume(100);
-								// configuracaoGeral.setInstrumento();
+								configuracaoGeral.setInstrumento(conteudoComboInstrumento);
+
+								Conversao converteOTexto = new Conversao(configuracaoGeral, conteudoTextoMusica);
+								Sequence sequencia = converteOTexto.converteTexto();
+								Tocador tocador = new Tocador();
+								tocador.tocaMusica(sequencia);
+							} catch (NumberFormatException ex) {
+								JOptionPane.showOptionDialog(null, "BPM aceita apenas números!", "ERRO",
+										JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
 							}
 						}
 					}
 				}
-
-				//
 			}
 		});
 	}
