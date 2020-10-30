@@ -113,6 +113,46 @@ public class Tela {
 	private final int BOTAO_LIMPAR_TEXTO_LARGURA = 150;
 	private final int BOTAO_LIMPAR_TEXTO_ALTURA = 30;
 
+	public void invocarTela() {
+		// Cria o frame
+		JFrame frame = new JFrame("Music Text Composition");
+		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+		// Chama os métodos que criam os elementos visuais da tela
+		this.criaTitulo();
+		this.criarLabels();
+		this.criarInputs();
+		this.criarBotoes();
+
+		// Adiciona os elementos criados no frame
+		frame.add(titulo);
+		frame.add(labelTextoMusica);
+		frame.add(scrollTextoMusica);
+		frame.add(labelNomeArquivo);
+		frame.add(inputNomeArquivo);
+		frame.add(labelBpm);
+		frame.add(inputBpm);
+		frame.add(labelInstrumento);
+		frame.add(comboInstrumento);
+		frame.add(buttonGerarMusica);
+		frame.add(buttonBaixarMusica);
+		frame.add(buttonEscolherArquivo);
+		frame.add(buttonLimparTexto);
+
+		// Atribui algumas configurações para o frame
+		frame.setSize(TELA_LARGURA, TELA_ALTURA); // Bota altura e largura
+		frame.setResizable(false); // Não deixa o usuário maximizar a tela
+		frame.setLayout(null); // Não usa o Layout para podermos mover os elementos livremente
+		frame.setVisible(true);
+
+		// Ao clicar nos botões, vai para sua determinada função
+		this.clicarBotaoEscolherArquivo();
+		this.clicarBotaoLimparTexto();
+		this.clicarBotaoGerarMusica();
+		this.clicarBotaoBaixarMusica();
+
+	}
+	
 	private void criarInputs() {
 		// Cria o text area para o usuário inserir o texto
 		inputTextoMusica = new JTextArea();
@@ -220,6 +260,7 @@ public class Tela {
 							inputTextoMusica.append(scanner.nextLine());
 							inputTextoMusica.append("\n");
 						}
+						scanner.close();
 					} catch (Exception ex) {
 						ex.printStackTrace();
 					}
@@ -249,6 +290,42 @@ public class Tela {
 					JOptionPane.showOptionDialog(null, "Texto para conversão não informado!", "ERRO",
 							JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
 				} else {
+					if (conteudoBpm.isEmpty()) {
+						JOptionPane.showOptionDialog(null, "BPM não informado!", "ERRO", JOptionPane.DEFAULT_OPTION,
+								JOptionPane.ERROR_MESSAGE, null, null, null);
+					} else {
+						try {
+							ConfiguracaoGeral configuracaoGeral = new ConfiguracaoGeral();
+							configuracaoGeral.setNomeArquivo(conteudoNomeArquivo);
+							configuracaoGeral.setBpm(Integer.parseInt(conteudoBpm));
+							configuracaoGeral.setInstrumento(conteudoComboInstrumento);
+
+							Conversao converteOTexto = new Conversao(configuracaoGeral, conteudoTextoMusica);
+							Sequence sequencia = converteOTexto.converteTexto();
+							Tocador tocador = new Tocador();
+							tocador.tocaMusica(sequencia);
+						} catch (NumberFormatException ex) {
+							JOptionPane.showOptionDialog(null, "BPM aceita apenas números!", "ERRO",
+									JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
+						}
+					}
+				}
+			}
+		});
+	}
+
+	private void clicarBotaoBaixarMusica() {
+		buttonBaixarMusica.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String conteudoTextoMusica = inputTextoMusica.getText();
+				String conteudoNomeArquivo = inputNomeArquivo.getText();
+				String conteudoBpm = inputBpm.getText();
+				String conteudoComboInstrumento = comboInstrumento.getSelectedItem().toString();
+
+				if (conteudoTextoMusica.isEmpty()) {
+					JOptionPane.showOptionDialog(null, "Texto para conversão não informado!", "ERRO",
+							JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
+				} else {
 					if (conteudoNomeArquivo.isEmpty()) {
 						JOptionPane.showOptionDialog(null, "Nome do arquivo não informado!", "ERRO",
 								JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
@@ -258,16 +335,29 @@ public class Tela {
 									JOptionPane.ERROR_MESSAGE, null, null, null);
 						} else {
 							try {
-								int conversaoConteudoBpm = Integer.parseInt(conteudoBpm);
-								ConfiguracaoGeral configuracaoGeral = new ConfiguracaoGeral();
-								configuracaoGeral.setNomeArquivo(conteudoNomeArquivo);
-								configuracaoGeral.setBpm(Integer.parseInt(conteudoBpm));
-								configuracaoGeral.setInstrumento(conteudoComboInstrumento);
+								JFileChooser fileChooser = new JFileChooser();
+								fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+								fileChooser.setApproveButtonText("Salvar");
+								fileChooser.setDialogTitle("Escolha o local para baixar a música");
+								fileChooser.setSelectedFile(new File(conteudoNomeArquivo));
+								int selecaoUsuario = fileChooser.showSaveDialog(null);
 
-								Conversao converteOTexto = new Conversao(configuracaoGeral, conteudoTextoMusica);
-								Sequence sequencia = converteOTexto.converteTexto();
-								Tocador tocador = new Tocador();
-								tocador.tocaMusica(sequencia);
+								if (selecaoUsuario == JFileChooser.APPROVE_OPTION) {
+									String name = conteudoNomeArquivo + ".mid";
+									name = fileChooser.getCurrentDirectory() + "/" + name;
+									File arquivoMidi = new File(name);
+
+									ConfiguracaoGeral configuracaoGeral = new ConfiguracaoGeral();
+									configuracaoGeral.setNomeArquivo(conteudoNomeArquivo);
+									configuracaoGeral.setBpm(Integer.parseInt(conteudoBpm));
+									configuracaoGeral.setInstrumento(conteudoComboInstrumento);
+
+									Conversao converteOTexto = new Conversao(configuracaoGeral, conteudoTextoMusica);
+									Sequence sequencia = converteOTexto.converteTexto();
+									
+									Tocador tocador = new Tocador();
+									tocador.baixaMusica(sequencia, arquivoMidi);
+								}
 							} catch (NumberFormatException ex) {
 								JOptionPane.showOptionDialog(null, "BPM aceita apenas números!", "ERRO",
 										JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
@@ -278,43 +368,4 @@ public class Tela {
 			}
 		});
 	}
-
-	public void invocarTela() {
-		// Cria o frame
-		JFrame frame = new JFrame("Music Text Composition");
-		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-		// Chama os métodos que criam os elementos visuais da tela
-		this.criaTitulo();
-		this.criarLabels();
-		this.criarInputs();
-		this.criarBotoes();
-
-		// Adiciona os elementos criados no frame
-		frame.add(titulo);
-		frame.add(labelTextoMusica);
-		frame.add(scrollTextoMusica);
-		frame.add(labelNomeArquivo);
-		frame.add(inputNomeArquivo);
-		frame.add(labelBpm);
-		frame.add(inputBpm);
-		frame.add(labelInstrumento);
-		frame.add(comboInstrumento);
-		frame.add(buttonGerarMusica);
-		frame.add(buttonBaixarMusica);
-		frame.add(buttonEscolherArquivo);
-		frame.add(buttonLimparTexto);
-
-		// Atribui algumas configurações para o frame
-		frame.setSize(TELA_LARGURA, TELA_ALTURA); // Bota altura e largura
-		frame.setResizable(false); // Não deixa o usuário maximizar a tela
-		frame.setLayout(null); // Não usa o Layout para podermos mover os elementos livremente
-		frame.setVisible(true);
-
-		// Ao clicar nos botões, vai para sua determinada função
-		this.clicarBotaoEscolherArquivo();
-		this.clicarBotaoLimparTexto();
-		this.clicarBotaoGerarMusica();
-	}
-
 }

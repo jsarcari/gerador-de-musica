@@ -3,59 +3,308 @@ package classes;
 import javax.sound.midi.*;
 
 public class Conversao {
+	
+	/*Comandos necessários para criar os eventos*/
+	private final int NOTE_ON = 144;
+	private final int NOTE_OFF = 128;
+	private final int MUDA_INSTRUMENTO = 192;
+	private final int CANAL = 0;
+	
+	/*Valores iniciais*/
+	//private final int OCTAVE_INICIAL = 1;
+	private final int TICK_INICIAL = 1;
+	
+	/*Valores limites*/
+	private final int LIMITE_VOLUME = 127;
+	private final int LIMITE_INSTRUMENTOS = 126;
+	
 	private String texto;
 	private ConfiguracaoGeral configuracao;
+	private NotasMusicais notasMusicais;
 	private Sequence sequencia;
 	private int notaAtual; //Para armazenar a nota mais recente
-	private int notaAntiga; //Para armazenar a nota antiga
+	private int notaAntigaConvertidaEmInteiro; //Para armazenar a nota antiga em inteiros (Usada ao criar os events)
+	private char notaAntigaEmChar; //Usada para guardar a última nota solicitada (em char)
+	private char notaAtualEmChar;
 	
-	private int octave; //Distancia de uma nota para a mesma ocorrência da mesma. Ex: A B C D E F G A B...
+	//private int octave = OCTAVE_INICIAL;
 	private int tick;
 	private int time = 4;
 
-	//Quando aumentar ou diminuir o Octave fazer + ou - 12
-	
-	//Notas musicais -- ACHO QUE DA PRA OTIMIZAR...
-	private int DO;
-	private int RE;
-	private int MI;
-	private int FA;
-	private int SOL;
-	private int LA;
-	private int SI;
-	
 	public Conversao(ConfiguracaoGeral configuracaoGeral, String conteudoTexto) {
 		this.configuracao = configuracaoGeral;
 		this.setTexto(conteudoTexto);
-		this.setOctave(4); //Valor inicial
-		this.setTick(1); //Tick
-		this.inicializaNotas(); //Inicia os valores das notas
+		//this.setOctave(OCTAVE_INICIAL);
+		this.setTick(TICK_INICIAL);
 	}
 	
-	private void inicializaNotas()
+	public Sequence converteTexto() {
+		try {
+			sequencia = new Sequence(Sequence.PPQ, time); // Ver melhor depois
+			Track track = sequencia.createTrack();
+
+			notasMusicais = new NotasMusicais();
+			this.geraEventoInstrumento(track);
+			
+			char[] letrasArray = this.getTexto().toCharArray();
+			for (char caractere : letrasArray) {
+				boolean retornoVerificacao = this.verificaNotaMusical(caractere);
+				if (retornoVerificacao) { //Caso seja uma nota musical válida
+					//Atribui a respectiva nota
+					this.atribuiNota(caractere);
+					//Atribui a nota antiga
+					this.setNotaAntigaConvertidaEmInteiro(); //Para o caso de ser nota musical
+					this.setNotaAntigaChar();
+					
+					//Gera os eventos necessários de acordo com as notas
+					this.geraEventosNotasAtuais(track);
+					this.geraEventosNotasAnteriores(track);
+					
+					this.updateTick();
+				}else { //Caso NÃO seja uma nota músical
+					this.tratamentoCaracteresQueNaoSaoNotasMusicais(caractere, track);
+					this.setNotaAtualEmChar(caractere);
+					this.setNotaAntigaChar();
+					this.updateTick();
+				}
+			}
+
+		} catch (InvalidMidiDataException ex) {
+			ex.printStackTrace();
+		}
+		return sequencia;
+	}
+	
+	private void tratamentoCaracteresQueNaoSaoNotasMusicais(char caractere, Track track)
 	{
-		this.setDO();
-		this.setRE();
-		this.setMI();
-		this.setFA();
-		this.setSOL();
-		this.setLA();
-		this.setSI();
+		boolean verificaNotaAnterior;
+		switch(caractere)
+		{
+			case ' ':
+				this.aumentarDobroVolume();
+				break;
+			case '!':
+				this.atribuiInstrumentoEspecifico(114);
+				track = this.geraEventoInstrumento(track);
+				break;
+			case 'O':
+			case 'o':
+			case 'I':
+			case 'i':
+			case 'U':
+			case 'u':
+				this.atribuiInstrumentoEspecifico(7);
+				track = this.geraEventoInstrumento(track);
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				//Valor do instrumento atual + valor do dígito
+				int novoValorDoInstrumento = configuracao.getInstrumento() + Character.getNumericValue(caractere);
+				if(novoValorDoInstrumento < LIMITE_INSTRUMENTOS)
+				{
+					this.atribuiInstrumentoEspecifico(novoValorDoInstrumento);
+					this.geraEventoInstrumento(track);
+				}
+				break;
+			case '?':
+				notasMusicais.aumentaUmaOctave();
+				break;
+			case '\n':
+				this.atribuiInstrumentoEspecifico(15);
+				this.geraEventoInstrumento(track);
+				break;
+			case ';':
+				this.atribuiInstrumentoEspecifico(76);
+				this.geraEventoInstrumento(track);
+				break;
+			case ',':
+				this.atribuiInstrumentoEspecifico(20);
+				this.geraEventoInstrumento(track);
+				break;
+			default:
+				//Tanto as consoantes (que não são notas), quanto as notas (minúsculas) quanto qualquer outro tipo
+				//de caractere leva a mesma coisa. Por conta disso, todos esses caminhos citados levam a 'default'
+				verificaNotaAnterior = this.verificaNotaAnterior(this.getNotaAntigaChar());
+				if(verificaNotaAnterior)
+				{
+					this.geraEventosNotasAnteriores(track);
+				}
+				break;
+		}
+	}
+		
+	private boolean verificaNotaAnterior(char notaAnterior)
+	{
+		switch(notaAnterior)
+		{
+			case 'A':
+			case 'B':
+			case 'C':
+			case 'D':
+			case 'E':
+			case 'F':
+			case 'G':
+				return true;
+			default:
+				return false;
+		}
+	}
+	
+	//VER
+	private boolean verificaNotaMusical(char letra) {
+		switch (letra) {
+		// Caso seja alguma nota musical retorna true.
+		// Caso contrário, retorna false
+		case 'A':
+		case 'B':
+		case 'C':
+		case 'D':
+		case 'E':
+		case 'F':
+		case 'G':
+			return true;
+		default:
+			return false;
+		}
 	}
 
-	private void aumentarBpm() {
-		int atual = this.configuracao.getBpm();
-		this.configuracao.setBpm(atual + 50);
+	private void atribuiNota(char nota) {
+		switch (nota) {
+		case 'A':
+			this.setNotaAtual(notasMusicais.retornaValorNotaOctave('A'));
+			this.setNotaAtualEmChar('A');
+			break;
+		case 'B':
+			this.setNotaAtual(notasMusicais.retornaValorNotaOctave('B'));
+			this.setNotaAtualEmChar('B');
+			break;
+		case 'C':
+			this.setNotaAtual(notasMusicais.retornaValorNotaOctave('C'));
+			this.setNotaAtualEmChar('C');
+			break;
+		case 'D':
+			this.setNotaAtual(notasMusicais.retornaValorNotaOctave('D'));
+			this.setNotaAtualEmChar('D');
+			break;
+		case 'E':
+			this.setNotaAtual(notasMusicais.retornaValorNotaOctave('E'));
+			this.setNotaAtualEmChar('E');
+			break;
+		case 'F':
+			this.setNotaAtual(notasMusicais.retornaValorNotaOctave('F'));
+			this.setNotaAtualEmChar('F');
+			break;
+		case 'G':
+			this.setNotaAtual(notasMusicais.retornaValorNotaOctave('G'));
+			this.setNotaAtualEmChar('G');
+			break;
+		//Caso for alguma dessas letras em minúsculo, pega a nota antiga
+		case 'a':
+		case 'b':
+		case 'c':
+		case 'd':
+		case 'e':
+		case 'f':
+		case 'g':
+			this.setNotaAtual(this.getNotaAntigaConvertidaEmInteiro());
+			break;
+		}
 	}
 
-	private void diminuirBpm() {
-		int atual = this.configuracao.getBpm();
-		this.configuracao.setBpm(atual - 50);
+	private Track geraEventosNotasAtuais(Track track)
+	{
+		try {
+			//Para as notas atuais
+			ShortMessage message = new ShortMessage();
+			message.setMessage(NOTE_ON, CANAL, getNotaAtual(), configuracao.getVolume());
+			MidiEvent evento_nota_atual_on = new MidiEvent(message, tick);
+			
+			ShortMessage message2 = new ShortMessage();
+			message2.setMessage(NOTE_OFF, CANAL, getNotaAtual(), configuracao.getVolume());
+			MidiEvent evento_nota_atual_off = new MidiEvent(message2, tick + 2);
+					
+			//Adiciona todos os eventos no track
+			track.add(evento_nota_atual_on);
+			track.add(evento_nota_atual_off);
+			
+			return track;
+			
+		} catch (InvalidMidiDataException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
-
-	private void aumentarVolume() {
+	
+	private Track geraEventosNotasAnteriores(Track track)
+	{
+		try {
+			//Para as notas anteriores
+			ShortMessage messageOld = new ShortMessage();
+			messageOld.setMessage(NOTE_ON, CANAL, getNotaAntigaConvertidaEmInteiro(), configuracao.getVolume());
+			MidiEvent evento_nota_antiga_on = new MidiEvent(messageOld, tick);
+			
+			ShortMessage messageOld2 = new ShortMessage();
+			messageOld2.setMessage(NOTE_OFF, CANAL, getNotaAntigaConvertidaEmInteiro(), configuracao.getVolume());
+			MidiEvent evento_nota_antiga_off = new MidiEvent(messageOld2, tick + 2);
+			
+			//Adiciona todos os eventos no track
+			track.add(evento_nota_antiga_on);
+			track.add(evento_nota_antiga_off);
+			
+			return track;
+			
+		} catch (InvalidMidiDataException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	private Track geraEventoInstrumento(Track track)
+	{
+		try {
+			ShortMessage messageInstrument = new ShortMessage();
+			messageInstrument.setMessage(MUDA_INSTRUMENTO, 0, configuracao.getInstrumento(), getTick());
+			MidiEvent eventInstrument = new MidiEvent(messageInstrument, tick);
+			
+			track.add(eventInstrument);
+			
+			return track;
+			
+		} catch (InvalidMidiDataException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	private void atribuiInstrumentoEspecifico(int valorInstrumento)
+	{
+		configuracao.atribuiInstrumentoEspecifico(valorInstrumento);
+	}
+	
+	private void updateTick()
+	{
+		this.setTick(getTick() + time);
+	}
+	
+	private void aumentarDobroVolume() {
 		int atual = this.configuracao.getVolume();
-		this.configuracao.setVolume(atual * 2);
+		if(atual * 2 < LIMITE_VOLUME) //Verifica se o valor excede o limite do volume
+		{
+			this.configuracao.setVolume(atual * 2);
+		}else {
+			this.volumePadrao();
+		}
 	}
 
 	private void volumePadrao() {
@@ -70,148 +319,20 @@ public class Conversao {
 		this.notaAtual = notaAtual;
 	}
 	
-	private int getNotaAntiga() {
-		return notaAntiga;
+	private int getNotaAntigaConvertidaEmInteiro() {
+		return notaAntigaConvertidaEmInteiro;
 	}
 
-	private void setNotaAntiga() {
-		this.notaAntiga = this.getNotaAtual();
-	}
-
-	private void trocaInstrumento() {
-		/*
-		 * String instrumentoAtual = configuracao.getInstrumento();
-		 * switch(instrumentoAtual) { case "Acoustic Grand Piano":
-		 * configuracao.setInstrumento("Harpsichord"); break; case "Harpsichord": break;
-		 * case "Electric Grand Piano": break;
-		 * 
-		 * case "Xylophone": break; case "Church Organ": break; case
-		 * "Acoustic Guitar (nylon)": break; case "Acoustic Bass": break; case "Violin":
-		 * break; case "Trumpet": break; case "Ocarina": break; }
-		 */
-	}
-
-	private boolean verificaNotaMusical(char letra) {
-		switch (letra) {
-		// Caso seja alguma nota musical retorna true.
-		// Caso contrário, retorna false
-		case 'A':
-		case 'B':
-		case 'C':
-		case 'D':
-		case 'E':
-		case 'F':
-		case 'G':
-		case 'a':
-		case 'b':
-		case 'c':
-		case 'd':
-		case 'e':
-		case 'f':
-		case 'g':
-			return true;
-		default:
-			return false;
-		}
-	}
-
-	private void atribuiNota(char nota) {
-		switch (nota) {
-		case 'A':
-			this.setNotaAtual(this.getLA());
-			break;
-		case 'B':
-			this.setNotaAtual(this.getSI());
-			break;
-		case 'C':
-			this.setNotaAtual(this.getDO());
-			break;
-		case 'D':
-			this.setNotaAtual(this.getRE());
-			break;
-		case 'E':
-			this.setNotaAtual(this.getMI());
-			break;
-		case 'F':
-			this.setNotaAtual(this.getFA());
-			break;
-		case 'G':
-			this.setNotaAtual(this.getSOL());
-			break;
-		//Caso for alguma dessas letras em minúsculo, pega a nota antiga
-		case 'a':
-		case 'b':
-		case 'c':
-		case 'd':
-		case 'e':
-		case 'f':
-		case 'g':
-			this.setNotaAtual(this.getNotaAntiga());
-			break;
-		}
-	}
-
-	public Sequence converteTexto() {
-		try {
-			sequencia = new Sequence(Sequence.PPQ, time); // Ver melhor depois
-			Track track = sequencia.createTrack();
-
-			char[] letrasArray = this.texto.toCharArray();
-			for (char letra : letrasArray) {
-				boolean retornoVerificacao = this.verificaNotaMusical(letra);
-				if (retornoVerificacao) {
-					//Caso seja uma nota musical válida
-					//Atribuit a respectiva nota
-					this.atribuiNota(letra);
-					//Atribuit a nota antiga
-					this.setNotaAntiga();
-					//
-					
-					ShortMessage message = new ShortMessage();
-					message.setMessage(144, 0, getNotaAtual() + getOctave(), configuracao.getVolume());
-					MidiEvent event = new MidiEvent(message, tick);
-					
-					//Teste
-					ShortMessage message2 = new ShortMessage();
-					message2.setMessage(128, 0, getNotaAtual() + getOctave(), configuracao.getVolume());
-					MidiEvent event2 = new MidiEvent(message2, tick + 2);
-					
-					
-					track.add(event);	
-					track.add(event2);
-					
-					ShortMessage messageOld = new ShortMessage();
-					messageOld.setMessage(144, 0, getNotaAntiga() + getOctave(), configuracao.getVolume());
-					MidiEvent eventOld = new MidiEvent(message, tick);
-					
-					//Teste
-					ShortMessage messageOld2 = new ShortMessage();
-					messageOld2.setMessage(128, 0, getNotaAntiga() + getOctave(), configuracao.getVolume());
-					MidiEvent eventOld2 = new MidiEvent(message2, tick + 2);
-					
-					track.add(eventOld);
-					track.add(eventOld2);
-					
-					ShortMessage messageInstrument = new ShortMessage();
-					messageInstrument.setMessage(192, 0, 25, 0);
-					MidiEvent eventInstrument = new MidiEvent(messageInstrument, tick);
-					
-					track.add(eventInstrument);
-					
-					this.updateTick();
-					
-				}
-			}
-
-		} catch (InvalidMidiDataException ex) {
-			ex.printStackTrace();
-		}
-		return sequencia;
+	private void setNotaAntigaConvertidaEmInteiro() {
+		this.notaAntigaConvertidaEmInteiro = this.getNotaAtual();
 	}
 	
-	private void updateTick()
-	{
-		this.setTick(getTick() + time);
+	private char getNotaAntigaChar() {
+		return notaAntigaEmChar;
+	}
+
+	private void setNotaAntigaChar() {
+		this.notaAntigaEmChar = this.getNotaAtualEmChar();
 	}
 	
 	private String getTexto() {
@@ -222,70 +343,6 @@ public class Conversao {
 		this.texto = texto;
 	}
 
-	private int getOctave() {
-		return octave;
-	}
-
-	private void setOctave(int octave) {
-		this.octave = octave;
-	}
-
-	private int getDO() {
-		return DO;
-	}
-
-	private void setDO() {
-		this.DO = this.getOctave() * 12;
-	}
-
-	private int getRE() {
-		return RE;
-	}
-
-	private void setRE() {
-		this.RE = this.getDO() + 2;
-	}
-
-	private int getMI() {
-		return MI;
-	}
-
-	private void setMI() {
-		this.MI = this.getRE() + 2;
-	}
-
-	private int getFA() {
-		return FA;
-	}
-
-	private void setFA() {
-		this.FA = this.getMI() + 2;
-	}
-
-	private int getSOL() {
-		return SOL;
-	}
-
-	private void setSOL() {
-		this.SOL = this.getFA() + 2;
-	}
-
-	private int getLA() {
-		return LA;
-	}
-
-	private void setLA() {
-		this.LA = this.getSOL() + 2;
-	}
-
-	private int getSI() {
-		return SI;
-	}
-
-	private void setSI() {
-		this.SI = this.getSI() + 2;
-	}
-
 	private int getTick() {
 		return tick;
 	}
@@ -294,4 +351,14 @@ public class Conversao {
 		this.tick = tick;
 	}
 
+	
+	public char getNotaAtualEmChar() {
+		return notaAtualEmChar;
+	}
+
+	
+	public void setNotaAtualEmChar(char notaAtualEmChar) {
+		this.notaAtualEmChar = notaAtualEmChar;
+	}
+	
 }
