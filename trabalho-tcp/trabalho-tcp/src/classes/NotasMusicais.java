@@ -2,127 +2,139 @@ package classes;
 
 public class NotasMusicais {
 
-	/* Valor de cada nota */
-	private final int VALOR_NOTA_A = 69;
-	private final int VALOR_NOTA_B = 71;
-	private final int VALOR_NOTA_C = 60;
-	private final int VALOR_NOTA_D = 62;
-	private final int VALOR_NOTA_E = 64;
-	private final int VALOR_NOTA_F = 65;
-	private final int VALOR_NOTA_G = 67;
-
-	// As notas musicais utilizadas
-	private int DO; // C
-	private int RE; // D
-	private int MI; // E
-	private int FA; // F
-	private int SOL; // G
-	private int LA; // A
-	private int SI; // B
-
-	private int octave;
 	private final int OCTAVE_INICIAL = 1;
 
+	/* Atributos contendo o valor de cada nota */
+	private int valorNotaA;
+	private int valorNotaB;
+	private int valorNotaC;
+	private int valorNotaD;
+	private int valorNotaE;
+	private int valorNotaF;
+	private int valorNotaG;
+
+	// As notas musicais utilizadas. Essas variáveis contém o valor da nota + valor
+	// da Octave
+	private int notaDo; // C
+	private int notaRe; // D
+	private int notaMi; // E
+	private int notaFa; // F
+	private int notaSol; // G
+	private int notaLa; // A
+	private int notaSi; // B
+
+	private int octave;
+
+	// Construtor
 	public NotasMusicais() {
 		this.setOctave(OCTAVE_INICIAL);
 		this.inicializaNotas();
 	}
-	
-	public void inicializaNotas()
-	{
-		this.setDO();
-		this.setRE();
-		this.setMI();
-		this.setFA();
-		this.setSOL();
-		this.setLA();
-		this.setSI();
-	}
-	
-	public int retornaValorNotaOctave(char letra)
-	{
-		switch(letra)
-		{
-			case 'A':
-				return this.getLA();
-			case 'B':
-				return this.getSI();
-			case 'C':
-				return this.getDO();
-			case 'D':
-				return this.getRE();
-			case 'E':
-				return this.getMI();
-			case 'F':
-				return this.getFA();
-			case 'G':
-				return this.getSOL();
-			default:
-				return 0;
+
+	// Retorna o valor de cada nota musical
+	public int retornaValorNotaOctave(char letra) {
+		switch (letra) {
+		case 'A':
+			return this.getNotaLa();
+		case 'B':
+			return this.getNotaSi();
+		case 'C':
+			return this.getNotaDo();
+		case 'D':
+			return this.getNotaRe();
+		case 'E':
+			return this.getNotaMi();
+		case 'F':
+			return this.getNotaFa();
+		case 'G':
+			return this.getNotaSol();
+		default:
+			return 0;
 		}
 	}
 
-	private int getDO() {
-		return DO;
+	// Aumentar uma octave equivale a somar + 12 no valor atual
+	public void aumentaUmaOctave() {
+		int novaOctave = this.getOctave() + 12;
+		if (novaOctave > -24 && novaOctave < 24) {
+			this.setOctave(novaOctave);
+		} else {
+			this.setOctave(OCTAVE_INICIAL);
+		}
 	}
 
-	private void setDO() {
-		//this.DO = (this.getOctave() + 1) * 12 + VALOR_NOTA_C;
-		this.DO = this.getOctave() + VALOR_NOTA_C;
+	// Inicializa o valor de cada letra e o valor de cada nota musical
+	private void inicializaNotas() {
+		this.setValorNotaA();
+		this.setValorNotaB();
+		this.setValorNotaC();
+		this.setValorNotaD();
+		this.setValorNotaE();
+		this.setValorNotaF();
+		this.setValorNotaG();
+		this.setNotaDo();
+		this.setNotaRe();
+		this.setNotaMi();
+		this.setNotaFa();
+		this.setNotaSol();
+		this.setNotaLa();
+		this.setNotaSi();
 	}
 
-	private int getRE() {
-		return RE;
+	private int getNotaDo() {
+		return notaDo;
 	}
 
-	private void setRE() {
-		//this.RE = (this.getOctave() + 1) * 12 + VALOR_NOTA_D;
-		this.RE = this.getOctave() + VALOR_NOTA_D;
+	private void setNotaDo() {
+		this.notaDo = this.getOctave() + getValorNotaC();
 	}
 
-	private int getMI() {
-		return MI;
+	private int getNotaRe() {
+		return notaRe;
 	}
 
-	private void setMI() {
-		//this.MI = (this.getOctave() + 1) * 12 + VALOR_NOTA_E;
-		this.MI = this.getOctave() + VALOR_NOTA_E;
+	private void setNotaRe() {
+		this.notaRe = this.getOctave() + getValorNotaD();
 	}
 
-	private int getFA() {
-		return FA;
+	private int getNotaMi() {
+		return notaMi;
 	}
 
-	private void setFA() {
-		//this.FA = (this.getOctave() + 1) * 12 + VALOR_NOTA_F;
-		this.FA = this.getOctave() + VALOR_NOTA_F;
+	private void setNotaMi() {
+		this.notaMi = this.getOctave() + getValorNotaE();
 	}
 
-	private int getSOL() {
-		return SOL;
+	private int getNotaFa() {
+		return notaFa;
 	}
 
-	private void setSOL() {
-		//this.SOL = (this.getOctave() + 1) * 12 + VALOR_NOTA_G;
-		this.SOL = this.getOctave() + VALOR_NOTA_G;
+	private void setNotaFa() {
+		this.notaFa = this.getOctave() + getValorNotaF();
 	}
 
-	private int getLA() {
-		return LA;
+	private int getNotaSol() {
+		return notaSol;
 	}
 
-	private void setLA() {
-		//this.LA = (this.getOctave() + 1) * 12 + VALOR_NOTA_A;
-		this.LA = this.getOctave() + VALOR_NOTA_A;
+	private void setNotaSol() {
+		this.notaSol = this.getOctave() + getValorNotaG();
 	}
 
-	private int getSI() {
-		return SI;
+	private int getNotaLa() {
+		return notaLa;
 	}
 
-	private void setSI() {
-		//this.SI = (this.getOctave() + 1) * 12 + VALOR_NOTA_B;
-		this.SI = this.getOctave() + VALOR_NOTA_B;
+	private void setNotaLa() {
+		this.notaLa = this.getOctave() + getValorNotaA();
+	}
+
+	private int getNotaSi() {
+		return notaSi;
+	}
+
+	private void setNotaSi() {
+		this.notaSi = this.getOctave() + getValorNotaB();
 	}
 
 	public int getOctave() {
@@ -132,17 +144,60 @@ public class NotasMusicais {
 	public void setOctave(int octave) {
 		this.octave = octave;
 	}
-	
-	//Aumentar uma octave equivale a somar + 12 no valor atual
-	public void aumentaUmaOctave()
-	{
-		int novaOctave = this.getOctave() + 12;
-		if(novaOctave > -24 && novaOctave < 24)
-		{
-			this.setOctave(novaOctave);
-		}
-		else {
-			this.setOctave(OCTAVE_INICIAL);
-		}
+
+	private int getValorNotaA() {
+		return valorNotaA;
+	}
+
+	private void setValorNotaA() {
+		this.valorNotaA = 69;
+	}
+
+	private int getValorNotaB() {
+		return valorNotaB;
+	}
+
+	private void setValorNotaB() {
+		this.valorNotaB = 71;
+	}
+
+	private int getValorNotaC() {
+		return valorNotaC;
+	}
+
+	private void setValorNotaC() {
+		this.valorNotaC = 60;
+	}
+
+	private int getValorNotaD() {
+		return valorNotaD;
+	}
+
+	private void setValorNotaD() {
+		this.valorNotaD = 62;
+	}
+
+	private int getValorNotaE() {
+		return valorNotaE;
+	}
+
+	private void setValorNotaE() {
+		this.valorNotaE = 64;
+	}
+
+	private int getValorNotaF() {
+		return valorNotaF;
+	}
+
+	private void setValorNotaF() {
+		this.valorNotaF = 65;
+	}
+
+	private int getValorNotaG() {
+		return valorNotaG;
+	}
+
+	private void setValorNotaG() {
+		this.valorNotaG = 67;
 	}
 }

@@ -12,6 +12,7 @@ import javax.swing.border.Border; //Para conseguir implementar as bordas
 
 public class Tela {
 
+	// Atributos correspondentes aos elementos que aparecem na tela
 	private JLabel titulo;
 	private JLabel labelTextoMusica;
 	private JTextArea inputTextoMusica;
@@ -26,6 +27,12 @@ public class Tela {
 	private JButton buttonBaixarMusica;
 	private JButton buttonEscolherArquivo;
 	private JButton buttonLimparTexto;
+
+	// Atributos responsáveis por pegar o conteúdo dos elementos da tela
+	private String conteudoTextoMusica;
+	private String conteudoNomeArquivo;
+	private String conteudoBpm;
+	private String conteudoComboInstrumento;
 
 	/* Tamanho da tela */
 	private final int TELA_LARGURA = 1000;
@@ -112,6 +119,8 @@ public class Tela {
 	private final int POSICAO_TELA_BOTAO_LIMPAR_TEXTO_Y = POSICAO_TELA_COMBO_INSTRUMENTO_Y + 150;
 	private final int BOTAO_LIMPAR_TEXTO_LARGURA = 150;
 	private final int BOTAO_LIMPAR_TEXTO_ALTURA = 30;
+	
+	Tocador tocador = new Tocador();
 
 	public void invocarTela() {
 		// Cria o frame
@@ -124,6 +133,24 @@ public class Tela {
 		this.criarInputs();
 		this.criarBotoes();
 
+		// Adiciona os elementos criados no frame
+		adicionaElementosAoFrame(frame);
+
+		// Atribui algumas configurações para o frame
+		frame.setSize(TELA_LARGURA, TELA_ALTURA); // Bota altura e largura
+		frame.setResizable(false); // Não deixa o usuário maximizar a tela
+		frame.setLayout(null); // Não usa o Layout para podermos mover os elementos livremente
+		frame.setVisible(true);
+
+		// Ao clicar nos botões, vai para sua determinada função
+		this.clicarBotaoEscolherArquivo();
+		this.clicarBotaoLimparTexto();
+		this.clicarBotaoGerarMusica();
+		this.clicarBotaoBaixarMusica();
+	}
+
+	//Função responsável por adicionar todos elementos criados ao frame, possibilitando a visualização dos mesmos
+	private void adicionaElementosAoFrame(JFrame frame) {
 		// Adiciona os elementos criados no frame
 		frame.add(titulo);
 		frame.add(labelTextoMusica);
@@ -138,21 +165,9 @@ public class Tela {
 		frame.add(buttonBaixarMusica);
 		frame.add(buttonEscolherArquivo);
 		frame.add(buttonLimparTexto);
-
-		// Atribui algumas configurações para o frame
-		frame.setSize(TELA_LARGURA, TELA_ALTURA); // Bota altura e largura
-		frame.setResizable(false); // Não deixa o usuário maximizar a tela
-		frame.setLayout(null); // Não usa o Layout para podermos mover os elementos livremente
-		frame.setVisible(true);
-
-		// Ao clicar nos botões, vai para sua determinada função
-		this.clicarBotaoEscolherArquivo();
-		this.clicarBotaoLimparTexto();
-		this.clicarBotaoGerarMusica();
-		this.clicarBotaoBaixarMusica();
-
 	}
-	
+
+	// Função responsável por criar os inputs da tela
 	private void criarInputs() {
 		// Cria o text area para o usuário inserir o texto
 		inputTextoMusica = new JTextArea();
@@ -190,6 +205,7 @@ public class Tela {
 
 	}
 
+	// Função responsável por criar os labels da tela
 	private void criarLabels() {
 		// Cria o label acima do Text Area
 		labelTextoMusica = new JLabel("Digite o texto para ser convertido: ");
@@ -215,6 +231,7 @@ public class Tela {
 		labelInstrumento.setFont(labelInstrumento.getFont().deriveFont(20.0F));
 	}
 
+	// Função responsável por criar os botões da tela
 	private void criarBotoes() {
 		// Cria o botão de Gerar Música
 		buttonGerarMusica = new JButton("Gerar Música");
@@ -237,6 +254,7 @@ public class Tela {
 				BOTAO_LIMPAR_TEXTO_LARGURA, BOTAO_LIMPAR_TEXTO_ALTURA);
 	}
 
+	// Função responsável por criar o título da tela
 	private void criaTitulo() {
 		// Cria um label contendo o título
 		titulo = new JLabel("<html><span style='color: black;'>Music Text Composition</span></html>");
@@ -244,6 +262,8 @@ public class Tela {
 		titulo.setFont(titulo.getFont().deriveFont(50.0F));
 	}
 
+	// Função responsável por capturar o click no botão 'EscolherArquivo' e fazer
+	// seu devido tratamento
 	private void clicarBotaoEscolherArquivo() {
 		buttonEscolherArquivo.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -269,6 +289,7 @@ public class Tela {
 		});
 	}
 
+	// Função responsável por limpar o TextArea contendo o texto
 	private void clicarBotaoLimparTexto() {
 		buttonLimparTexto.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -278,23 +299,61 @@ public class Tela {
 		});
 	}
 
+	// Função responsável por capturar o click no botão 'GerarMusica' e fazer seu
+	// devido tratamento
 	private void clicarBotaoGerarMusica() {
 		buttonGerarMusica.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String conteudoTextoMusica = inputTextoMusica.getText();
-				String conteudoNomeArquivo = inputNomeArquivo.getText();
-				String conteudoBpm = inputBpm.getText();
-				String conteudoComboInstrumento = comboInstrumento.getSelectedItem().toString();
+				
+				pegaConteudoDosInputs(); // Seta o conteúdo dos inputs
+				// Faz as verificações necessárias dos campos obrigatórios
+				Boolean retornoVerificacaoCampos = verificaCamposAoClicarBotaoGerarMusica();
+				//Verifica se já está tocando uma música para não sobrepor
+				Boolean retornoSeTaTocando = tocador.musicaTaTocando(); 
+				// Se retornar true, prossegue com o programa
+				if (retornoVerificacaoCampos && !retornoSeTaTocando) {
+					try {
+						ConfiguracaoGeral configuracaoGeral = new ConfiguracaoGeral();
+						configuracaoGeral.setNomeArquivo(conteudoNomeArquivo);
+						configuracaoGeral.setBpm(Integer.parseInt(conteudoBpm));
+						configuracaoGeral.setInstrumento(conteudoComboInstrumento);
 
-				if (conteudoTextoMusica.isEmpty()) {
-					JOptionPane.showOptionDialog(null, "Texto para conversão não informado!", "ERRO",
-							JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
-				} else {
-					if (conteudoBpm.isEmpty()) {
-						JOptionPane.showOptionDialog(null, "BPM não informado!", "ERRO", JOptionPane.DEFAULT_OPTION,
-								JOptionPane.ERROR_MESSAGE, null, null, null);
-					} else {
-						try {
+						Conversao converteOTexto = new Conversao(configuracaoGeral, conteudoTextoMusica);
+						Sequence sequencia = converteOTexto.converteTexto();
+						
+						tocador.tocaMusica(sequencia, configuracaoGeral);
+					} catch (NumberFormatException ex) {
+						JOptionPane.showOptionDialog(null, "BPM aceita apenas números!", "ERRO",
+								JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
+					}
+				}
+			}
+		});
+	}
+
+	// Função responsável por capturar o click no botão 'BaixarMusica' e fazer seu
+	// devido tratamento
+	private void clicarBotaoBaixarMusica() {
+		buttonBaixarMusica.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				pegaConteudoDosInputs(); // Seta o conteúdo dos inputs
+				// Faz as verificações necessárias dos campos obrigatórios
+				Boolean retornoVerificacaoCampos = verificaCamposAoClicarBotaoBaixarMusica();
+				// Se retornar true, prossegue com o programa
+				if (retornoVerificacaoCampos) {
+					try {
+						JFileChooser fileChooser = new JFileChooser();
+						fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+						fileChooser.setApproveButtonText("Salvar");
+						fileChooser.setDialogTitle("Escolha o local para baixar a música");
+						fileChooser.setSelectedFile(new File(conteudoNomeArquivo));
+						int selecaoUsuario = fileChooser.showSaveDialog(null);
+
+						if (selecaoUsuario == JFileChooser.APPROVE_OPTION) {
+							String name = conteudoNomeArquivo + ".mid";
+							name = fileChooser.getCurrentDirectory() + "/" + name;
+							File arquivoMidi = new File(name);
+
 							ConfiguracaoGeral configuracaoGeral = new ConfiguracaoGeral();
 							configuracaoGeral.setNomeArquivo(conteudoNomeArquivo);
 							configuracaoGeral.setBpm(Integer.parseInt(conteudoBpm));
@@ -302,70 +361,112 @@ public class Tela {
 
 							Conversao converteOTexto = new Conversao(configuracaoGeral, conteudoTextoMusica);
 							Sequence sequencia = converteOTexto.converteTexto();
+
 							Tocador tocador = new Tocador();
-							tocador.tocaMusica(sequencia);
-						} catch (NumberFormatException ex) {
-							JOptionPane.showOptionDialog(null, "BPM aceita apenas números!", "ERRO",
-									JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
+							tocador.baixaMusica(sequencia, arquivoMidi);
 						}
+					} catch (NumberFormatException ex) {
+						JOptionPane.showOptionDialog(null, "BPM aceita apenas números!", "ERRO",
+								JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
 					}
 				}
 			}
 		});
 	}
 
-	private void clicarBotaoBaixarMusica() {
-		buttonBaixarMusica.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String conteudoTextoMusica = inputTextoMusica.getText();
-				String conteudoNomeArquivo = inputNomeArquivo.getText();
-				String conteudoBpm = inputBpm.getText();
-				String conteudoComboInstrumento = comboInstrumento.getSelectedItem().toString();
+	// Função para verificar os campos obrigatórios ao clicar no botão 'GerarMusica'
+	// Caso algum campo não tenha sido informado, a função retorna false
+	// Caso todos campos tenham sido informados, a função retorna true
+	private boolean verificaCamposAoClicarBotaoGerarMusica() {
+		if (getConteudoTextoMusica().isEmpty()) {
+			JOptionPane.showOptionDialog(null, "Texto para conversão não informado!", "ERRO",
+					JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
+			return false;
+		}
 
-				if (conteudoTextoMusica.isEmpty()) {
-					JOptionPane.showOptionDialog(null, "Texto para conversão não informado!", "ERRO",
-							JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
-				} else {
-					if (conteudoNomeArquivo.isEmpty()) {
-						JOptionPane.showOptionDialog(null, "Nome do arquivo não informado!", "ERRO",
-								JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
-					} else {
-						if (conteudoBpm.isEmpty()) {
-							JOptionPane.showOptionDialog(null, "BPM não informado!", "ERRO", JOptionPane.DEFAULT_OPTION,
-									JOptionPane.ERROR_MESSAGE, null, null, null);
-						} else {
-							try {
-								JFileChooser fileChooser = new JFileChooser();
-								fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-								fileChooser.setApproveButtonText("Salvar");
-								fileChooser.setDialogTitle("Escolha o local para baixar a música");
-								fileChooser.setSelectedFile(new File(conteudoNomeArquivo));
-								int selecaoUsuario = fileChooser.showSaveDialog(null);
+		if (getConteudoBpm().isEmpty()) {
+			JOptionPane.showOptionDialog(null, "BPM não informado!", "ERRO", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.ERROR_MESSAGE, null, null, null);
+			return false;
+		}
+		
+		if(Double.parseDouble(getConteudoBpm()) >= 999999999)
+		{
+			JOptionPane.showOptionDialog(null, "BPM muito alto! Informe um valor menor", "ERRO", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.ERROR_MESSAGE, null, null, null);
+			return false;
+		}
 
-								if (selecaoUsuario == JFileChooser.APPROVE_OPTION) {
-									String name = conteudoNomeArquivo + ".mid";
-									name = fileChooser.getCurrentDirectory() + "/" + name;
-									File arquivoMidi = new File(name);
+		if (getConteudoComboInstrumento().isEmpty()) {
+			JOptionPane.showOptionDialog(null, "Instrumento não informado!", "ERRO", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.ERROR_MESSAGE, null, null, null);
+			return false;
+		}
 
-									ConfiguracaoGeral configuracaoGeral = new ConfiguracaoGeral();
-									configuracaoGeral.setNomeArquivo(conteudoNomeArquivo);
-									configuracaoGeral.setBpm(Integer.parseInt(conteudoBpm));
-									configuracaoGeral.setInstrumento(conteudoComboInstrumento);
+		return true;
+	}
 
-									Conversao converteOTexto = new Conversao(configuracaoGeral, conteudoTextoMusica);
-									Sequence sequencia = converteOTexto.converteTexto();
-									
-									Tocador tocador = new Tocador();
-									tocador.baixaMusica(sequencia, arquivoMidi);
-								}
-							} catch (NumberFormatException ex) {
-								JOptionPane.showOptionDialog(null, "BPM aceita apenas números!", "ERRO",
-										JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
-							}
-						}
-					}
-				}
-			}
-		});
+	// Função para verificar os campos obrigatórios ao clicar no botão
+	// 'BaixarMusica'
+	// Caso algum campo não tenha sido informado, a função retorna false
+	// Caso todos campos tenham sido informados, a função retorna true
+	private boolean verificaCamposAoClicarBotaoBaixarMusica() {
+		if (getConteudoTextoMusica().isEmpty()) {
+			JOptionPane.showOptionDialog(null, "Texto para conversão não informado!", "ERRO",
+					JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, null, null);
+			return false;
+		}
+
+		if (getConteudoNomeArquivo().isEmpty()) {
+			JOptionPane.showOptionDialog(null, "Nome do arquivo não informado!", "ERRO", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.ERROR_MESSAGE, null, null, null);
+			return false;
+		}
+
+		if (getConteudoBpm().isEmpty()) {
+			JOptionPane.showOptionDialog(null, "BPM não informado!", "ERRO", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.ERROR_MESSAGE, null, null, null);
+			return false;
+		}
+		
+		if(Double.parseDouble(getConteudoBpm()) >= 999999999)
+		{
+			JOptionPane.showOptionDialog(null, "BPM muito alto! Informe um valor menor", "ERRO", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.ERROR_MESSAGE, null, null, null);
+			return false;
+		}
+
+		if (getConteudoComboInstrumento().isEmpty()) {
+			JOptionPane.showOptionDialog(null, "Instrumento não informado!", "ERRO", JOptionPane.DEFAULT_OPTION,
+					JOptionPane.ERROR_MESSAGE, null, null, null);
+			return false;
+		}
+
+		return true;
+	}
+
+	// Função responsável por pegar o conteúdo dos inputs e atribuir a sua
+	// respectiva variável
+	private void pegaConteudoDosInputs() {
+		this.conteudoTextoMusica = inputTextoMusica.getText();
+		this.conteudoNomeArquivo = inputNomeArquivo.getText();
+		this.conteudoBpm = inputBpm.getText();
+		this.conteudoComboInstrumento = comboInstrumento.getSelectedItem().toString();
+	}
+
+	private String getConteudoTextoMusica() {
+		return conteudoTextoMusica;
+	}
+
+	private String getConteudoNomeArquivo() {
+		return conteudoNomeArquivo;
+	}
+
+	private String getConteudoBpm() {
+		return conteudoBpm;
+	}
+
+	private String getConteudoComboInstrumento() {
+		return conteudoComboInstrumento;
 	}
 }
