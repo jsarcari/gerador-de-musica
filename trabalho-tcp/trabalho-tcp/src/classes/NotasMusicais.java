@@ -62,6 +62,14 @@ public class NotasMusicais {
 			this.setOctave(OCTAVE_INICIAL);
 		}
 	}
+	
+	public int getOctave() {
+		return octave;
+	}
+
+	public void setOctave(int octave) {
+		this.octave = octave;
+	}
 
 	// Inicializa o valor de cada letra e o valor de cada nota musical
 	private void inicializaNotas() {
@@ -135,14 +143,6 @@ public class NotasMusicais {
 
 	private void setNotaSi() {
 		this.notaSi = this.getOctave() + getValorNotaB();
-	}
-
-	public int getOctave() {
-		return octave;
-	}
-
-	public void setOctave(int octave) {
-		this.octave = octave;
 	}
 
 	private int getValorNotaA() {

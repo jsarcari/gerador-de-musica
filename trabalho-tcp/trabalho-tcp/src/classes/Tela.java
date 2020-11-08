@@ -12,6 +12,8 @@ import javax.swing.border.Border; //Para conseguir implementar as bordas
 
 public class Tela {
 
+	private Tocador tocador = new Tocador();
+	
 	// Atributos correspondentes aos elementos que aparecem na tela
 	private JLabel titulo;
 	private JLabel labelTextoMusica;
@@ -27,7 +29,7 @@ public class Tela {
 	private JButton buttonBaixarMusica;
 	private JButton buttonEscolherArquivo;
 	private JButton buttonLimparTexto;
-
+	
 	// Atributos responsáveis por pegar o conteúdo dos elementos da tela
 	private String conteudoTextoMusica;
 	private String conteudoNomeArquivo;
@@ -119,8 +121,6 @@ public class Tela {
 	private final int POSICAO_TELA_BOTAO_LIMPAR_TEXTO_Y = POSICAO_TELA_COMBO_INSTRUMENTO_Y + 150;
 	private final int BOTAO_LIMPAR_TEXTO_LARGURA = 150;
 	private final int BOTAO_LIMPAR_TEXTO_ALTURA = 30;
-	
-	Tocador tocador = new Tocador();
 
 	public void invocarTela() {
 		// Cria o frame

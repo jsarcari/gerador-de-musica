@@ -14,6 +14,7 @@ public class ConfiguracaoGeral {
 		this.volume = VALOR_PADRAO_VOLUME;
 	}
 
+	// Recebe o valor de um instrumento e seta o mesmo a variável
 	public void atribuiInstrumentoEspecifico(int valorInstrumento) {
 		this.instrumento = valorInstrumento;
 	}

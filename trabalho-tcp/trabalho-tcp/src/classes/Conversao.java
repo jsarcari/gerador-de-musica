@@ -12,11 +12,19 @@ public class Conversao {
 
 	/* Valores iniciais */
 	private final int TICK_INICIAL = 1;
+	private int time = 4;
 
 	/* Valores limites */
 	private final int LIMITE_VOLUME = 127;
 	private final int LIMITE_INSTRUMENTOS = 126;
 
+	/* Valores de instrumentos que foram solicitados no mapeamento */
+	private final int INSTRUMENTO_AGOGO = 114;
+	private final int INSTRUMENTO_HARPSICHORD = 7;
+	private final int INSTRUMENTO_TUBULAR_BELLS = 15;
+	private final int INSTRUMENTO_PAN_FLUTE = 76;
+	private final int INSTRUMENTO_CHURCH_ORGAN = 20;
+	
 	private String texto;
 	private ConfiguracaoGeral configuracao;
 	private NotasMusicais notasMusicais;
@@ -35,16 +43,7 @@ public class Conversao {
 
 	private char notaAtualEmChar; // Usada para guardar a nota atual (em char)
 	private char notaAntigaEmChar; // Usada para guardar a última nota solicitada (em char)
-
 	private int tick;
-	private int time = 4;
-
-	/* Valores de instrumentos que foram solicitados no mapeamento */
-	private final int INSTRUMENTO_AGOGO = 114;
-	private final int INSTRUMENTO_HARPSICHORD = 7;
-	private final int INSTRUMENTO_TUBULAR_BELLS = 15;
-	private final int INSTRUMENTO_PAN_FLUTE = 76;
-	private final int INSTRUMENTO_CHURCH_ORGAN = 20;
 
 	// Construtor
 	public Conversao(ConfiguracaoGeral configuracaoGeral, String conteudoTexto) {
